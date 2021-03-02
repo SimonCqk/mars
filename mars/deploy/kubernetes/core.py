@@ -17,6 +17,8 @@ import logging
 import os
 import random
 import time
+import json
+import requests
 
 from ...actors import new_client, FunctionActor
 
@@ -106,6 +108,11 @@ class K8SPodsIPWatcher(object):
 
     def get_schedulers(self, update=False):
         from .config import MarsSchedulersConfig
+        if "MARS_CLUSTER_DETAIL" in os.environ:
+            cluster = json.loads(os.getenv("MARS_CLUSTER_DETAIL"))
+            sched_endpoints = [ep for ep in list(cluster["scheduler"]) if requests.get(ep).ok]
+            self._service_pod_to_ep[MarsSchedulersConfig.rc_name] = sched_endpoints
+            return sorted(sched_endpoints)
         return self._get_endpoints_by_service_type(MarsSchedulersConfig.rc_name, update=update)
 
     def is_all_schedulers_ready(self):
